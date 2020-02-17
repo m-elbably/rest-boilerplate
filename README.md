@@ -1,4 +1,4 @@
-Reset API base template (Boilerplate) that can be used as a service, monolith or gateway.
+Rest API base template (Boilerplate) that can be used as a service, monolith or gateway.
 
 #### Features
 
