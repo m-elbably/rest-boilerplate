@@ -15,3 +15,8 @@ Run the below command inside the project:
 npm run eslint-init
 ```
 ![](gif_helpers/add-linting.gif)
+
+To run lining throw terminal:
+```
+npm run lint
+```
