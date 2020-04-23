@@ -16,20 +16,25 @@ class Model {
   }
 
   preSave(data) {
+    const cData = { ...data };
     if (this._options.timestamp) {
-      data.createdAt = new Date(Date.now());
-      data.updatedAt = new Date(Date.now());
+      cData.createdAt = new Date(Date.now());
+      cData.updatedAt = new Date(Date.now());
     }
+    return cData;
   }
 
   preUpdate(update) {
+    const cUpdate = { ...update };
+
     if (this._options.timestamp) {
       if (_.isNil(update.$set)) {
-        update.$set = {};
+        cUpdate.$set = {};
       }
 
-      update.$set.updatedAt = new Date(Date.now());
+      cUpdate.$set.updatedAt = new Date(Date.now());
     }
+    return cUpdate;
   }
 
   get name() {
@@ -54,32 +59,32 @@ class Model {
   }
 
   async create(data) {
+    let document = data;
     if (this.preSave) {
-      this.preSave(data);
+      document = this.preSave(data);
     }
 
-    return this._model.insertOne(data).then((res) => {
-      if (res.insertedCount > 0) {
-        return res.ops[0];
-      }
-    });
+    return this._model.insertOne(document)
+      .then((res) => (res.insertedCount > 0 ? res.ops[0] : null));
   }
 
   async updateById(id, update, options = {}) {
+    let cUpdate = { ...update };
     if (this.preUpdate) {
-      this.preUpdate(update);
+      cUpdate = this.preUpdate(update);
     }
 
-    return this._model.findOneAndUpdate({ _id: new ObjectId(id) }, update, options)
+    return this._model.findOneAndUpdate({ _id: new ObjectId(id) }, cUpdate, options)
       .then((res) => res.value);
   }
 
   async updateOne(filter, update, options = {}) {
+    let cUpdate = { ...update };
     if (this.preUpdate) {
-      this.preUpdate(update);
+      cUpdate = this.preUpdate(update);
     }
 
-    return this._model.findOneAndUpdate(filter, update, options)
+    return this._model.findOneAndUpdate(filter, cUpdate, options)
       .then((res) => res.value);
   }
 
