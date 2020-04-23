@@ -10,11 +10,15 @@ class DummyService extends BaseService {
   }
 
   async create(body, files = {}) {
+    const dummyData = { ...body };
     if (!_.isNil(body.password)) {
-      body.password = await crypto.createHash(body.password);
+      dummyData.password = await crypto.createHash(body.password);
     }
 
-    return super.create(body)
+    if (files) {
+      console.log('You can do whatever with the files here');
+    }
+    return super.create(dummyData)
       .then(async (user) => {
         const token = await crypto.createJwtToken({
           sub: user.email,

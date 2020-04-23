@@ -175,12 +175,8 @@ class BaseService {
   }
 
   async create(document) {
-    try {
-      return this._validateUniqueness(document)
-        .then(() => this._model.create(document)).then((result) => this._parseDocuments(result));
-    } catch (err) {
-      throw err;
-    }
+    return this._validateUniqueness(document)
+      .then(() => this._model.create(document)).then((result) => this._parseDocuments(result));
   }
 
   async updateById(id, update, opts = {}) {

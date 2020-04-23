@@ -9,12 +9,12 @@ const multipartParser = require('./multipartParser');
 const fileUploader = require('./fileUploader');
 
 module.exports = {
-    errorHandler,
-    responseHandler,
-    notFoundHandler,
-    authentication,
-    normalizer,
-    logger,
-    multipartParser,
-    fileUploader,
+  errorHandler,
+  responseHandler,
+  notFoundHandler,
+  authentication,
+  normalizer,
+  logger,
+  multipartParser,
+  fileUploader,
 };

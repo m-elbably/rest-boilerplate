@@ -4,25 +4,25 @@ const cors = require('@koa/cors');
 const routes = require('../middlewares/routes');
 
 const {
-    errorHandler,
-    notFoundHandler,
-    responseHandler,
-    authentication,
-    logger,
-    normalizer,
+  errorHandler,
+  notFoundHandler,
+  responseHandler,
+  authentication,
+  logger,
+  normalizer,
 } = require('../middlewares');
 
 const middlewares = [
-    errorHandler(),
-    compress(),
-    responseHandler(),
-    logger({autoLog: true}),
-    cors(),
-    koaBody(),
-    normalizer(),
-    authentication(),
-    routes(),
-    notFoundHandler(),
+  errorHandler(),
+  compress(),
+  responseHandler(),
+  logger({ autoLog: true }),
+  cors(),
+  koaBody(),
+  normalizer(),
+  authentication(),
+  routes(),
+  notFoundHandler(),
 ];
 
 module.exports = middlewares;

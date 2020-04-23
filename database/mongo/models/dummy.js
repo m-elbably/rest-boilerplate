@@ -14,18 +14,18 @@ const Model = require('../types/model');
  */
 
 class Dummy extends Model {
-    constructor(){
-        super('dummy', {
-            timestamp: true,
-            indexes: [
-                { fields: {email: 1}},
-                {
-                    fields: { 'location': '2dsphere' },
-                    options: { sparse: true }
-                },
-            ]
-        });
-    }
+  constructor() {
+    super('dummy', {
+      timestamp: true,
+      indexes: [
+        { fields: { email: 1 } },
+        {
+          fields: { location: '2dsphere' },
+          options: { sparse: true }
+        },
+      ]
+    });
+  }
 }
 
 module.exports = new Dummy();
