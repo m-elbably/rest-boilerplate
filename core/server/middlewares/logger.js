@@ -42,7 +42,7 @@ module.exports = (options) => {
       timestamp: new Date(Date.now())
     };
 
-    ctx._logger.log = function (level, message, payload) {
+    ctx._logger.log = function log(level = 'info', message, payload) {
       let data = {};
       // Custom user log
       if (level && message) {

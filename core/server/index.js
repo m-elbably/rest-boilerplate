@@ -19,14 +19,14 @@ class Server {
     this._server = http.createServer(this._app.callback());
   }
 
-  _setHooks(hooks = []) {
+  _setHooks(koaHooks = []) {
     Object.keys(hooks).forEach((key) => {
-      this._app.context[key] = hooks[key];
+      this._app.context[key] = koaHooks[key];
     });
   }
 
-  _setMiddlewares(middlewares = []) {
-    middlewares.forEach((mw) => {
+  _setMiddlewares(koaMiddlewares = []) {
+    koaMiddlewares.forEach((mw) => {
       this._app.use(mw);
     });
   }
@@ -65,6 +65,7 @@ class Server {
             }
             reject(err);
         }
+        return true;
       });
 
       this._server.on('listening', () => {

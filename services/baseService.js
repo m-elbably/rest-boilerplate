@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const { ObjectId } = require('mongodb');
-const { NotFoundError } = require('../core/common/errors');
+const { NotFoundError, ValidationError } = require('../core/common/errors');
 
 
 class BaseService {
@@ -152,25 +152,21 @@ class BaseService {
   }
 
   async _validateUniqueness(document, id) {
-    try {
-      const { unique } = this._options || {};
-      if (unique) {
-        const options = {};
-        if (unique.ignoreCase) {
-          options.collation = { locale: 'en', strength: 2 };
-        }
-
-        const query = { [unique.field]: document[unique.field] };
-        if (id) {
-          query._id = { $ne: this.ObjectId(id) };
-        }
-        const exists = await this._model.exists(query, options);
-        if (exists) {
-          throw new ValidationError(`Document with the same ${unique.field} already exists`);
-        }
+    const { unique } = this._options || {};
+    if (unique) {
+      const options = {};
+      if (unique.ignoreCase) {
+        options.collation = { locale: 'en', strength: 2 };
       }
-    } catch (e) {
-      throw e;
+
+      const query = { [unique.field]: document[unique.field] };
+      if (id) {
+        query._id = { $ne: this.ObjectId(id) };
+      }
+      const exists = await this._model.exists(query, options);
+      if (exists) {
+        throw new ValidationError(`Document with the same ${unique.field} already exists`);
+      }
     }
   }
 
@@ -180,167 +176,135 @@ class BaseService {
   }
 
   async updateById(id, update, opts = {}) {
-    try {
-      const nQuery = {
-        $set: update
-      };
-      const nOptions = _.merge(opts, {
-        returnOriginal: false
+    const nQuery = {
+      $set: update
+    };
+    const nOptions = _.merge(opts, {
+      returnOriginal: false
+    });
+
+    await this._validateUniqueness(update, id);
+    return this._model.updateById(id, nQuery, nOptions)
+      .then((result) => {
+        if (_.isNil(result)) {
+          throw new NotFoundError();
+        }
+
+        return this._parseDocuments(result);
       });
-
-      await this._validateUniqueness(update, id);
-      return this._model.updateById(id, nQuery, nOptions)
-        .then((result) => {
-          if (_.isNil(result)) {
-            throw new NotFoundError();
-          }
-
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
   }
 
   async updateOne(filter, update, opts = {}) {
-    try {
-      const nQuery = {
-        $set: update
-      };
-      const nOptions = _.merge(opts, {
-        returnOriginal: false
+    const nQuery = {
+      $set: update
+    };
+    const nOptions = _.merge(opts, {
+      returnOriginal: false
+    });
+
+    await this._validateUniqueness(update, id);
+    return this._model.updateOne(filter, nQuery, nOptions)
+      .then((result) => {
+        if (_.isNil(result)) {
+          throw new NotFoundError();
+        }
+
+        return this._parseDocuments(result);
       });
-
-      await this._validateUniqueness(update, id);
-      return this._model.updateOne(filter, nQuery, nOptions)
-        .then((result) => {
-          if (_.isNil(result)) {
-            throw new NotFoundError();
-          }
-
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
   }
 
   async findById(id, opts = {}) {
-    try {
-      const { params, options } = this._parseOptions(opts);
-      return this._model.findById(id, options)
-        .then((result) => {
-          if (_.isNil(result) && params.validate) throw new NotFoundError();
-          return result;
-        }).then((result) => {
-          if (params.populate) {
-            return this._populate(result, params.populate);
-          }
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
+    const { params, options } = this._parseOptions(opts);
+    return this._model.findById(id, options)
+      .then((result) => {
+        if (_.isNil(result) && params.validate) throw new NotFoundError();
+        return result;
+      }).then((result) => {
+        if (params.populate) {
+          return this._populate(result, params.populate);
+        }
+        return this._parseDocuments(result);
+      });
   }
 
   async findOne(filter = {}, opts = {}) {
-    try {
-      const { params, options } = this._parseOptions(opts);
-      return this._model.findOne(filter, options)
-        .then((result) => {
-          if (_.isNil(result) && params.validate) throw new NotFoundError();
-          return result;
-        }).then((result) => {
-          if (params.populate) {
-            return this._populate(result, params.populate);
-          }
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
+    const { params, options } = this._parseOptions(opts);
+    return this._model.findOne(filter, options)
+      .then((result) => {
+        if (_.isNil(result) && params.validate) throw new NotFoundError();
+        return result;
+      }).then((result) => {
+        if (params.populate) {
+          return this._populate(result, params.populate);
+        }
+        return this._parseDocuments(result);
+      });
   }
 
   async find(filter = {}, opts = {}, modelName) {
-    try {
-      const { params, options } = this._parseOptions(opts, true);
-      const collectionName = modelName || this._model.name;
-      const result = {
-        [collectionName]: [],
-        page: 0,
-        pages: 0
-      };
+    const { params, options } = this._parseOptions(opts, true);
+    const collectionName = modelName || this._model.name;
+    const result = {
+      [collectionName]: [],
+      page: 0,
+      pages: 0
+    };
 
-      const { limit } = options;
-      const { paginate, page, populate } = params;
-      if (paginate) {
-        const count = await this._model.count(filter);
-        const pages = Math.ceil(count / limit);
-        const pIndex = page > 0 ? page - 1 : 0;
+    const { limit } = options;
+    const { paginate, page, populate } = params;
+    if (paginate) {
+      const count = await this._model.count(filter);
+      const pages = Math.ceil(count / limit);
+      const pIndex = page > 0 ? page - 1 : 0;
 
-        options.limit = limit;
-        options.skip = limit * pIndex;
+      options.limit = limit;
+      options.skip = limit * pIndex;
 
-        result.pages = pages;
-        result.page = pages === 0 ? 0 : page;
-      }
-
-      const query = await this._model.find(filter, options);
-      return query.toArray()
-        .then((docs) => {
-          if (params.populate) {
-            return this._populate(docs, populate);
-          }
-          return docs;
-        }).then((docs) => this._parseDocuments(docs)).then((docs) => {
-          if (paginate) {
-            result[collectionName] = docs;
-            return result;
-          }
-
-          return docs;
-        });
-    } catch (err) {
-      throw err;
+      result.pages = pages;
+      result.page = pages === 0 ? 0 : page;
     }
+
+    const query = await this._model.find(filter, options);
+    return query.toArray()
+      .then((docs) => {
+        if (params.populate) {
+          return this._populate(docs, populate);
+        }
+        return docs;
+      }).then((docs) => this._parseDocuments(docs)).then((docs) => {
+        if (paginate) {
+          result[collectionName] = docs;
+          return result;
+        }
+
+        return docs;
+      });
   }
 
   async deleteOne(filter, opts = {}) {
-    try {
-      return this._model.deleteOne(filter, opts)
-        .then((result) => {
-          if (_.isNil(result)) {
-            throw new NotFoundError();
-          }
+    return this._model.deleteOne(filter, opts)
+      .then((result) => {
+        if (_.isNil(result)) {
+          throw new NotFoundError();
+        }
 
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
+        return this._parseDocuments(result);
+      });
   }
 
   async deleteById(id, opts = {}) {
-    try {
-      return this._model.deleteById(id, opts)
-        .then((result) => {
-          if (_.isNil(result)) {
-            throw new NotFoundError();
-          }
+    return this._model.deleteById(id, opts)
+      .then((result) => {
+        if (_.isNil(result)) {
+          throw new NotFoundError();
+        }
 
-          return this._parseDocuments(result);
-        });
-    } catch (err) {
-      throw err;
-    }
+        return this._parseDocuments(result);
+      });
   }
 
   async exists(filter) {
-    try {
-      return this._model.exists(filter);
-    } catch (err) {
-      throw err;
-    }
+    return this._model.exists(filter);
   }
 
   get utcTimestamp() {

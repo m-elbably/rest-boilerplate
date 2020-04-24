@@ -27,6 +27,7 @@ module.exports = {
             uniqueItems: true,
             items: {
               type: 'number',
+              // eslint-disable-next-line no-useless-escape
               pattern: '^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$',
             },
           },

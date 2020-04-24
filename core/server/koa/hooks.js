@@ -37,6 +37,7 @@ module.exports = {
         userAccess = nAccess[i];
         if (!_.isNil(predicate)) {
           if (userAccess.toLowerCase().endsWith('own')) {
+            // eslint-disable-next-line no-await-in-loop
             const result = await predicate();
 
             if (result) {
@@ -56,55 +57,49 @@ module.exports = {
     return { permission, allowed };
   },
   async authorize(user, resource, access, predicate) {
-    try {
-      if (_.isNil(user)) {
-        throw new UnauthorizedError();
+    if (_.isNil(user)) {
+      throw new UnauthorizedError();
+    }
+
+    _.merge(this._locals, { resource });
+
+    const { roles } = user;
+    const permission = await this.getAccess(roles, resource, access, predicate);
+
+    if (permission.granted === true) {
+      const { attributes } = permission;
+
+      if (attributes.length === 0 || (attributes.length === 0 && attributes[0] === '*')) {
+        return;
       }
 
-      _.merge(this._locals, { resource });
-
-      const { roles } = user;
-      const permission = await this.getAccess(roles, resource, access, predicate);
-
-      if (permission.granted === true) {
-        const { attributes } = permission;
-
-        if (attributes.length === 0 || (attributes.length === 0 && attributes[0] === '*')) {
-          return;
-        }
-
-        if (!_.isNil(this.request.body)) {
-          this.request.body = permission.filter(this.request.body);
-        }
-      } else {
-        throw new UnauthorizedError();
+      if (!_.isNil(this.request.body)) {
+        this.request.body = permission.filter(this.request.body);
       }
-    } catch (err) {
-      throw err;
+    } else {
+      throw new UnauthorizedError();
     }
   },
   filter(user, resource, data, dataPath) {
-    try {
-      if (_.isNil(user)) {
-        return data;
-      }
-
-      const { roles } = user;
-      let permission = accessControl.can(roles).readAny(resource);
-      if (!permission.granted) {
-        permission = accessControl.can(roles).readOwn(resource);
-      }
-
-      if (permission.granted) {
-        if (dataPath) {
-          data[dataPath] = permission.filter(data[dataPath]);
-          return data;
-        }
-
-        return permission.filter(data);
-      }
-    } catch (err) {
-      throw err;
+    const cData = { ...data };
+    if (_.isNil(user)) {
+      return data;
     }
+
+    const { roles } = user;
+    let permission = accessControl.can(roles).readAny(resource);
+    if (!permission.granted) {
+      permission = accessControl.can(roles).readOwn(resource);
+    }
+
+    if (permission.granted) {
+      if (dataPath) {
+        cData[dataPath] = permission.filter(cData[dataPath]);
+        return cData;
+      }
+
+      return permission.filter(cData);
+    }
+    return null;
   }
 };
