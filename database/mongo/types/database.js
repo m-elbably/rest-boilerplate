@@ -66,27 +66,23 @@ class Database {
     if (indexes && indexes.length > 0) {
       const collExists = await this._collectionExists(model.name);
       if (!collExists) {
-        for (let i = 0; i < indexes.length; i += 1) {
-          const options = indexes[i].options || {};
-          await this._db.collection(model.name).createIndex(indexes[i].fields, options);
-        }
+        const promises = indexes
+          .map((index) => this._db.collection(model.name).createIndex(index.fields, index.options));
+        await Promise.all(promises);
       }
     }
   }
 
   async _postConnection() {
-    for (const key in this._models) {
-      const model = this._models[key];
-      model.database = this._db;
-      await this._applyModelOptions(model);
-    }
+    const promises = Object.entries(this._models)
+      .map((model) => this._applyModelOptions({ ...model, database: this._db }));
+    await Promise.all(promises);
   }
 
   async registerModel(model) {
     this._models[model.name] = model;
     if (this.isConnected()) {
-      model.database = this._db;
-      await this._applyModelOptions(model);
+      await this._applyModelOptions({ ...model, database: this._db });
     }
 
     return model;
@@ -109,8 +105,8 @@ class Database {
         throw err;
       }
 
-      this._retries++;
-      return new Promise((resolve, reject) => {
+      this._retries += 1;
+      return new Promise((resolve) => {
         setTimeout(() => {
           console.log(`Waiting for database, Retries ${this._retries}, ${err}`);
           resolve(this.connect());
@@ -131,6 +127,7 @@ class Database {
     if (this._client) {
       return this._client.close();
     }
+    return null;
   }
 }
 
