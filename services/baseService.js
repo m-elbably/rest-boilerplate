@@ -7,6 +7,7 @@ class BaseService {
   constructor(model, useCache = false) {
     this.ObjectId = ObjectId;
     this._model = model;
+    this.useCache = useCache;
   }
 
   get storage() {
@@ -53,6 +54,7 @@ class BaseService {
       const rId = _.get(document, options[i].field);
       if (!_.isNil(rId)) {
         const rModel = this._model.database.collection(options[i].collection);
+        // eslint-disable-next-line no-await-in-loop
         const rDocument = await rModel.findOne({ _id: new ObjectId(rId) });
         if (!_.isNil(rDocument)) {
           _.set(document, options[i].field, rDocument);
@@ -63,15 +65,16 @@ class BaseService {
   }
 
   /**
-     * Populate array of documents
-     * @param opts
-     * [{
-     *     field: path,
-     *     collection: String
-     * }]
-     * @returns documents
-     * @private
-     */
+   * Populate array of documents
+   * @param documents
+   * @param opts
+   * [{
+   *     field: path,
+   *     collection: String
+   * }]
+   * @returns documents
+   * @private
+   */
   async _populate(documents, opts) {
     if (_.isNil(opts)) {
       return documents;
@@ -80,12 +83,9 @@ class BaseService {
     if (!_.isArray(documents)) {
       return this._populateDocument(documents, opts);
     }
+    const promises = documents.map((document) => this._populateDocument(document, opts));
 
-    for (let i = 0; i < documents.length; i += 1) {
-      documents[i] = await this._populateDocument(documents[i], opts);
-    }
-
-    return documents;
+    return Promise.all(promises);
   }
 
   /**
@@ -118,6 +118,7 @@ class BaseService {
      * @returns {*}
      * @private
      */
+  // eslint-disable-next-line class-methods-use-this
   _parseOptions(opts, multiple = false) {
     const params = {};
     const options = {};
@@ -201,8 +202,8 @@ class BaseService {
     const nOptions = _.merge(opts, {
       returnOriginal: false
     });
-
-    await this._validateUniqueness(update, id);
+    // FIXME: id is not defined,
+    // await this._validateUniqueness(update, id);
     return this._model.updateOne(filter, nQuery, nOptions)
       .then((result) => {
         if (_.isNil(result)) {
@@ -307,6 +308,7 @@ class BaseService {
     return this._model.exists(filter);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   get utcTimestamp() {
     return new Date(Date.now());
   }

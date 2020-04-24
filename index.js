@@ -5,7 +5,7 @@ const { service } = require('./config');
 const instance = new Server({
   name: service.name,
   port: service.port,
-  onStart: async (app) => {
+  onStart: async () => {
     await mongo.connect();
   },
   onClose: async () => {

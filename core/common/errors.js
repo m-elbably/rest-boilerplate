@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-classes-per-file
 class BaseError extends Error {
   constructor(
     code = 0,
