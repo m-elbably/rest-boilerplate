@@ -10,34 +10,44 @@ class DummyService extends BaseService {
   }
 
   async create(body, files = {}) {
-    const dummyData = { ...body };
-    if (!_.isNil(body.password)) {
-      dummyData.password = await crypto.createHash(body.password);
-    }
+    try {
+      const dummyData = { ...body };
+      if (!_.isNil(body.password)) {
+        dummyData.password = await crypto.createHash(body.password);
+      }
 
-    if (files) {
-      console.log('You can do whatever with the files here');
-    }
-    return super.create(dummyData)
-      .then(async (user) => {
-        const token = await crypto.createJwtToken({
-          sub: user.email,
-          roles: ['user']
+      if (files) {
+        console.log('You can do whatever with the files here');
+      }
+      return super.create(dummyData)
+        .then(async (user) => {
+          const token = await crypto.createJwtToken({
+            sub: user.email,
+            roles: ['user']
+          });
+
+          return { token, user };
         });
-
-        return { token, user };
-      });
+    } catch (e) {
+      throw new ValidationError(e);
+    }
   }
 
   async find(filter = {}, params = {}) {
-    const query = {};
-    const { age } = params;
+    try {
+      const query = {};
+      const { age } = params;
 
-    if (age) {
-      query.age = parseInt(age);
+      if (age) {
+        query.age = parseInt(age, 10);
+      }
+      if (filter) {
+        console.log('Do something with filter');
+      }
+      return super.find(query, params);
+    } catch (e) {
+      throw new NotFoundError(e);
     }
-
-    return super.find(query, params);
   }
 }
 
