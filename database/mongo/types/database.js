@@ -74,7 +74,7 @@ class Database {
   }
 
   async _postConnection() {
-    const promises = Object.entries(this._models)
+    const promises = Object.values(this._models)
       .map((model) => this._applyModelOptions({ ...model, database: this._db }));
     await Promise.all(promises);
   }

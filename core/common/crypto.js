@@ -24,24 +24,24 @@ class Crypto {
         if (err) {
           return reject(err);
         }
-
-        resolve(token);
+        return resolve(token);
       });
     });
   }
 
   static async createJwtTokenWithExpiration(signObj, timeoutMs = 0) {
     return new Promise((resolve, reject) => {
-      const currentTime = parseInt(new Date(Date.now()).getTime() / 1000);
-      const expireAfter = parseInt(timeoutMs / 1000);
-      signObj.exp = currentTime + expireAfter;
+      const cSignObject = { ...signObj };
+      const currentTime = new Date(Date.now()).getTime() / 1000;
+      const expireAfter = timeoutMs / 1000;
+      cSignObject.exp = currentTime + expireAfter;
 
-      jwt.sign(signObj, authentication.key, (err, token) => {
+      jwt.sign(cSignObject, authentication.key, (err, token) => {
         if (err) {
           return reject(err);
         }
 
-        resolve(token);
+        return resolve(token);
       });
     });
   }
@@ -52,16 +52,17 @@ class Crypto {
         if (!err) {
           return resolve(decoded);
         }
-
+        let errorCode;
+        let errorMsg;
         if (err.name === 'TokenExpiredError') {
-          err.code = 101;
-          err.message = 'Token has been expired';
+          errorCode = 101;
+          errorMsg = 'Token has been expired';
         } else if (err.name === 'JsonWebTokenError') {
-          err.message = 'Invalid token';
+          errorMsg = 'Invalid token';
         }
 
-        const error = new UnauthorizedError(err.message);
-        error.code = err.code;
+        const error = new UnauthorizedError(errorMsg || err.message);
+        error.code = errorCode || err.code;
 
         return reject(error);
       });
