@@ -12,11 +12,5 @@ Rest API base template (Boilerplate) that can be used as a service, monolith or 
 #### Configure Linting
 Run the below command inside the project:
 ```
-npm run eslint-init
-```
-![](res/images/add-linting.gif)
-
-To run lining throw terminal:
-```
 npm run lint
 ```
