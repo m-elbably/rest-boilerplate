@@ -1,16 +1,21 @@
-const Server = require('./core/server');
-const { mongo } = require('./database');
-const { service } = require('./config');
+const hooks = require('./src/server/hooks');
+const middlewares = require('./src/server/middlewares');
+const Server = require('./src/server');
+
+const { mongo } = require('./src/database');
+const { api } = require('./src/config');
 
 const instance = new Server({
-  name: service.name,
-  port: service.port,
-  onStart: async () => {
-    await mongo.connect();
-  },
-  onClose: async () => {
-    await mongo.close();
-  }
+    name: api.name,
+    port: api.port,
+    hooks,
+    middlewares,
+    onStart: async () => {
+        await mongo.connect();
+    },
+    onEnd: async () => {
+        await mongo.close();
+    }
 });
 
 instance.start();
