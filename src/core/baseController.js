@@ -38,9 +38,6 @@ class BaseController {
     async beforeAction(ctx, next) {
         // Add resource name to local variables
         _.set(ctx, '_locals.resource', this.name);
-        // Apply hooks to context
-        _.set(ctx, 'validate', this.validate);
-        _.set(ctx, 'authorize', this.authorize.bind(ctx));
 
         await next();
     }
@@ -53,16 +50,16 @@ class BaseController {
     }
 
     // Context Hooks ////
-    async authorize(access, predicate) {
-        if (_.isNil(this) || _.isNil(this._locals)) {
-            throw new UnexpectedError('Authorize should be called from context');
+    async authorize(ctx, access, predicate) {
+        if (_.isNil(ctx)) {
+            throw new UnexpectedError('Invalid context object passed');
         }
 
-        const { user, resource } = this._locals;
+        const { user, resource } = ctx._locals;
         const permission = await authorization.authorize(user, resource, access, predicate);
         // Store permission for "afterAction" to be used for filtering
-        _.set(this, '_locals.permission', permission);
-        await authorization.filterByPermission(permission, this.request, 'body');
+        _.set(ctx, '_locals.permission', permission);
+        await authorization.filterByPermission(permission, ctx.request, 'body');
     }
 
     async validate(schema, data, strict = true) {

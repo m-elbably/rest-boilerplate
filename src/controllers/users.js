@@ -28,19 +28,19 @@ class Users extends BaseController {
     }
 
     async create(ctx) {
-        await ctx.authorize(['createAny']);
-        await ctx.validate(ctx.request.body, userSchema);
+        await this.authorize(ctx, ['createAny']);
+        await this.validate(ctx.request.body, userSchema);
 
         ctx.body = await this.service.create(ctx.request.body, ctx.request.files);
     }
 
     async findOne(ctx) {
-        await ctx.authorize(['readAny']);
+        await this.authorize(ctx, ['readAny']);
         ctx.body = await this.service.findById(ctx.params.id, ctx.request.query);
     }
 
     async find(ctx) {
-        await ctx.authorize(['readAny']);
+        await this.authorize(ctx, ['readAny']);
         ctx.body = await this.service.find({}, ctx.request.query);
     }
 }
