@@ -44,12 +44,13 @@ class Multipart {
                 };
 
                 const multipartParser = multer(multerConfig).fields(fields);
-                await multipartParser(ctx);
-                if (parseBody) {
-                    this._parseBody(ctx);
-                }
+                await multipartParser(ctx, async () => {
+                    if (parseBody) {
+                        this._parseBody(ctx);
+                    }
 
-                await next();
+                    await next();
+                });
             } catch (err) {
                 this._errorHandler(err);
             }
