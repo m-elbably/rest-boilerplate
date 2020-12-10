@@ -14,7 +14,6 @@ const Model = require('../types/model');
       blocked: {type: 'boolean'}
     }
  */
-
 class User extends Model {
     constructor() {
         super('users', {

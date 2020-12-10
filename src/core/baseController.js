@@ -51,6 +51,9 @@ class BaseController {
 
     // Context Hooks ////
     async authorize(ctx, access, predicate) {
+        // TODO - apply auth when done
+        return;
+
         if (_.isNil(ctx)) {
             throw new UnexpectedError('Invalid context object passed');
         }

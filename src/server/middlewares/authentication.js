@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const crypto = require('../../common/crypto');
+// TODO use user service
 const { User } = require('../../database/mongo/models');
 const { UnauthenticatedError, ValidationError } = require('../../common/errors');
 

@@ -82,14 +82,14 @@ class Database {
         await Promise.all(promises);
     }
 
-    // async registerModel(model) {
-    //     this._models[model.name] = model;
-    //     if (this.isConnected()) {
-    //         await this._applyModelOptions({ ...model, database: this._db });
-    //     }
-    //
-    //     return model;
-    // }
+    async registerModel(model) {
+        this._models[model.name] = model;
+        if (this.isConnected()) {
+            await this._applyModelOptions({ ...model, database: this._db });
+        }
+
+        return model;
+    }
 
     async connect() {
         try {
@@ -101,7 +101,8 @@ class Database {
 
             console.log('Connected to [Mongo DB]');
             this._db = this._client.db(this._name);
-            return this._postConnection();
+            await this._postConnection();
+            return this;
         } catch (err) {
             if (this._retries >= DB_RETRIES) {
                 console.log('Connection timeout');
@@ -124,6 +125,10 @@ class Database {
         }
 
         return this._client.isConnected();
+    }
+
+    get instance() {
+        return this._db;
     }
 
     async close() {

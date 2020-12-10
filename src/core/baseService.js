@@ -2,7 +2,7 @@ const _ = require('lodash');
 const { EJSON } = require('bson');
 const { ObjectId } = require('mongodb');
 const { NotFoundError, ValidationError } = require('../common/errors');
-const { pageSize, maxPageSize } = require('../config').common;
+const { common: { pageSize } } = require('../config');
 
 class BaseService {
     constructor(model) {
@@ -10,22 +10,24 @@ class BaseService {
         this._model = model;
     }
 
-    _parseDocuments(documents) {
+    static _parseDocuments(documents) {
+        // TODO - To be removed and use base model toJSON()
         return _.isArray(documents) ? documents.map((doc) => EJSON.deserialize(doc))
             : EJSON.deserialize(documents);
     }
 
+    // TODO - To be removed and use base model
     /**
-   * Populate single document
-   * @param document
-   * @param options
-   * [{
-   *     field: path,
-   *     collection: String
-   * }]
-   * @returns document
-   * @private
-   */
+     * Populate single document
+     * @param document
+     * @param options
+     * [{
+     *     field: path,
+     *     collection: String
+     * }]
+     * @returns document
+     * @private
+     */
     async _populateDocument(document, options) {
         if (_.isNil(options)) {
             return document;
@@ -46,16 +48,16 @@ class BaseService {
     }
 
     /**
-   * Populate array of documents
-   * @param documents
-   * @param opts
-   * [{
-   *     field: path,
-   *     collection: String
-   * }]
-   * @returns documents
-   * @private
-   */
+     * Populate array of documents
+     * @param documents
+     * @param opts
+     * [{
+     *     field: path,
+     *     collection: String
+     * }]
+     * @returns documents
+     * @private
+     */
     async _populate(documents, opts) {
         if (_.isNil(opts)) {
             return documents;
@@ -101,37 +103,34 @@ class BaseService {
      */
     // eslint-disable-next-line class-methods-use-this
     _parseOptions(opts, multiple = false) {
+        const qOptions = _.get(opts, 'options', {});
         const {
-            paginate, validate, page, limit, projection, sort, populate
-        } = opts;
+            validate, page, limit, projection, sort, populate
+        } = qOptions;
 
+        const options = {};
         const params = {
             validate: _.isNil(validate) ? true : validate
         };
-        const options = {};
 
-        // Set defaults
-        if (multiple) {
-            params.paginate = true;
-            options.limit = pageSize;
-        }
-
-        if (!_.isNil(paginate) && multiple) {
-            params.paginate = paginate;
-        }
         if (!_.isNil(page) && multiple) {
             params.page = page;
         }
+
         if (populate) {
             params.populate = populate;
         }
 
         // Options
-        if (!_.isNil(sort) && multiple) {
-            options.sort = sort;
+        if (multiple) {
+            options.limit = pageSize;
         }
+
         if (!_.isNil(limit) && multiple) {
             options.limit = limit;
+        }
+        if (!_.isNil(sort) && multiple) {
+            options.sort = sort;
         }
         if (!_.isNil(projection)) {
             options.projection = projection;
@@ -141,7 +140,7 @@ class BaseService {
     }
 
     async _validateUniqueness(document, id) {
-        const { unique } = this._options || {};
+        const { unique } = this._model._options || {};
         if (unique) {
             const options = {};
             if (unique.ignoreCase) {
@@ -161,7 +160,8 @@ class BaseService {
 
     async create(document) {
         return this._validateUniqueness(document)
-            .then(() => this._model.create(document)).then((result) => this._parseDocuments(result));
+            .then(() => this._model.create(document))
+            .then((result) => BaseService._parseDocuments(result));
     }
 
     async updateById(id, update, opts = {}) {
@@ -179,7 +179,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return BaseService._parseDocuments(result);
             });
     }
 
@@ -212,7 +212,7 @@ class BaseService {
                 if (params.populate) {
                     return this._populate(result, params.populate);
                 }
-                return this._parseDocuments(result);
+                return BaseService._parseDocuments(result);
             });
     }
 
@@ -226,7 +226,7 @@ class BaseService {
                 if (params.populate) {
                     return this._populate(result, params.populate);
                 }
-                return this._parseDocuments(result);
+                return BaseService._parseDocuments(result);
             });
     }
 
@@ -244,20 +244,18 @@ class BaseService {
         };
 
         const { limit } = options;
-        const { paginate, page, populate } = params;
+        const { page, populate } = params;
         const count = await this._model.count(filter);
 
-        if (paginate) {
-            const pages = Math.ceil(count / limit);
-            const pIndex = page > 0 ? page - 1 : 0;
+        const pages = Math.ceil(count / limit);
+        const pIndex = page > 0 ? page - 1 : 0;
 
-            options.limit = limit;
-            options.skip = limit * pIndex;
+        options.limit = limit;
+        options.skip = limit * pIndex;
 
-            result.count = count;
-            result.pages = pages;
-            result.page = pages === 0 ? 0 : page;
-        }
+        result.count = count;
+        result.pages = pages;
+        result.page = pages === 0 ? 0 : page;
 
         const query = await this._model.find(filter, options);
         return query.toArray()
@@ -266,13 +264,13 @@ class BaseService {
                     return this._populate(docs, populate);
                 }
                 return docs;
-            }).then((docs) => this._parseDocuments(docs)).then((docs) => {
-                if (paginate) {
-                    result[collectionName] = docs;
-                    return result;
-                }
+            }).then((docs) => BaseService._parseDocuments(docs)).then((docs) => {
+                // if (paginate) {
+                result[collectionName] = docs;
+                return result;
+                // }
 
-                return docs;
+                // return docs;
             });
     }
 
@@ -283,7 +281,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return BaseService._parseDocuments(result);
             });
     }
 
@@ -300,6 +298,10 @@ class BaseService {
 
     async exists(filter) {
         return this._model.exists(filter);
+    }
+
+    async aggregate(pipeline, options) {
+        return this._model.aggregate(pipeline, options);
     }
 
     // eslint-disable-next-line class-methods-use-this

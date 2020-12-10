@@ -7,10 +7,13 @@ module.exports = (ctx) => {
     let limit;
     const { query } = ctx.request;
     const parsedQuery = {
-        page: 1,
-        limit: pageSize,
-        projection: {},
-        sort: {}
+        options: {
+            page: 1,
+            limit: pageSize,
+            projection: {},
+            sort: {},
+        },
+        filters: {}
     };
 
     Object.entries(query).forEach(([key, value]) => {
@@ -18,19 +21,19 @@ module.exports = (ctx) => {
         case 'page':
             page = utils.parseInt(value);
             page = page >= 1 ? page : 1;
-            parsedQuery.page = page;
+            parsedQuery.options.page = page;
             break;
         case 'limit':
             limit = utils.parseInt(value);
             limit = limit >= maxPageSize ? maxPageSize : limit;
-            parsedQuery.limit = limit;
+            parsedQuery.options.limit = limit;
             break;
         case 'projection':
             value.split(',')
                 .forEach((entry) => {
                     const op = entry.startsWith('-') ? 0 : 1;
                     const field = op === 1 ? entry : entry.substr(1);
-                    parsedQuery.projection[field] = op;
+                    parsedQuery.options.projection[field] = op;
                 });
             break;
         case 'sort':
@@ -47,11 +50,12 @@ module.exports = (ctx) => {
                         field = field.substr(1);
                     }
 
-                    parsedQuery.sort[field] = op;
+                    parsedQuery.options.sort[field] = op;
                 });
             break;
         default:
-            parsedQuery[key] = value;
+            parsedQuery.filters[key] = value;
+            delete parsedQuery[key];
         }
     });
 
