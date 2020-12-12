@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { EJSON } = require('bson');
 const ObjectId = require('mongodb').ObjectID;
 /**
  * Options: {
@@ -13,6 +14,12 @@ class Model {
 
         this._model = null;
         this._options = options || {};
+        this.ObjectId = ObjectId;
+    }
+
+    _decorate(document) {
+        // eslint-disable-next-line no-param-reassign
+        document.toJSON = () => EJSON.deserialize(this);
     }
 
     preSave(data) {
@@ -65,7 +72,7 @@ class Model {
         }
 
         return this._model.insertOne(document)
-            .then((res) => (res.insertedCount > 0 ? res.ops[0] : null));
+            .then((res) => (res.insertedCount > 0 ? this._decorate(res.ops[0]) : null));
     }
 
     async updateById(id, update, options = {}) {
@@ -75,7 +82,7 @@ class Model {
         }
 
         return this._model.findOneAndUpdate({ _id: new ObjectId(id) }, cUpdate, options)
-            .then((res) => res.value);
+            .then((res) => this._decorate(res.value));
     }
 
     async updateOne(filter, update, options = {}) {
@@ -85,29 +92,32 @@ class Model {
         }
 
         return this._model.findOneAndUpdate(filter, cUpdate, options)
-            .then((res) => res.value);
+            .then((res) => this._decorate(res.value));
     }
 
     async find(filter = {}, options = {}) {
-        return this._model.find(filter, options);
+        return this._model.find(filter, options)
+            .then((documents) => documents.map((document) => this._decorate(document)));
     }
 
     async findOne(filter, options = {}) {
-        return this._model.findOne(filter, options);
+        return this._model.findOne(filter, options)
+            .then((document) => this._decorate(document));
     }
 
     async findById(id, options = {}) {
-        return this._model.findOne({ _id: new ObjectId(id) }, options);
+        return this._model.findOne({ _id: new ObjectId(id) }, options)
+            .then((document) => this._decorate(document));
     }
 
     async deleteOne(filter, options = {}) {
         return this._model.findOneAndDelete(filter, options)
-            .then((res) => res.value);
+            .then((res) => this._decorate(res.value));
     }
 
     async deleteById(id, options = {}) {
         return this._model.findOneAndDelete({ _id: new ObjectId(id) }, options)
-            .then((res) => res.value);
+            .then((res) => this._decorate(res.value));
     }
 
     async exists(filter) {
@@ -120,6 +130,15 @@ class Model {
         }
         return this._model.estimatedDocumentCount();
     }
+
+    // async populate() {
+    //
+    // }
+
+    // toJSON(documents) {
+    //     return _.isArray(documents) ? documents.map((doc) => EJSON.deserialize(doc))
+    //         : EJSON.deserialize(documents);
+    // }
 }
 
 module.exports = Model;

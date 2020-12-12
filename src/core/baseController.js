@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-const validation = require('./validation');
+const validator = require('./validation');
 const authorization = require('./authorization');
 const { UnexpectedError } = require('../common/errors');
 
@@ -51,9 +51,6 @@ class BaseController {
 
     // Context Hooks ////
     async authorize(ctx, access, predicate) {
-        // TODO - apply auth when done
-        return;
-
         if (_.isNil(ctx)) {
             throw new UnexpectedError('Invalid context object passed');
         }
@@ -66,7 +63,7 @@ class BaseController {
     }
 
     async validate(schema, data, strict = true) {
-        validation.validate(schema, data, strict);
+        validator.validate(schema, data, strict);
     }
 }
 

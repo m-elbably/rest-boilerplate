@@ -10,10 +10,10 @@ class BaseService {
         this._model = model;
     }
 
-    static _parseDocuments(documents) {
+    _parseDocuments(documents) {
         // TODO - To be removed and use base model toJSON()
         return _.isArray(documents) ? documents.map((doc) => EJSON.deserialize(doc))
-            : EJSON.deserialize(documents);
+            : EJSON.deserialize(documents,);
     }
 
     // TODO - To be removed and use base model
@@ -161,7 +161,7 @@ class BaseService {
     async create(document) {
         return this._validateUniqueness(document)
             .then(() => this._model.create(document))
-            .then((result) => BaseService._parseDocuments(result));
+            .then((result) => this._parseDocuments(result));
     }
 
     async updateById(id, update, opts = {}) {
@@ -179,7 +179,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return BaseService._parseDocuments(result);
+                return this._parseDocuments(result);
             });
     }
 
@@ -212,7 +212,7 @@ class BaseService {
                 if (params.populate) {
                     return this._populate(result, params.populate);
                 }
-                return BaseService._parseDocuments(result);
+                return result.toJSON();
             });
     }
 
@@ -226,7 +226,7 @@ class BaseService {
                 if (params.populate) {
                     return this._populate(result, params.populate);
                 }
-                return BaseService._parseDocuments(result);
+                return this._parseDocuments(result);
             });
     }
 
@@ -264,7 +264,7 @@ class BaseService {
                     return this._populate(docs, populate);
                 }
                 return docs;
-            }).then((docs) => BaseService._parseDocuments(docs)).then((docs) => {
+            }).then((docs) => this._parseDocuments(docs)).then((docs) => {
                 // if (paginate) {
                 result[collectionName] = docs;
                 return result;
@@ -281,7 +281,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return BaseService._parseDocuments(result);
+                return this._parseDocuments(result);
             });
     }
 

@@ -1,9 +1,9 @@
-const Validator = require('ajv');
+const Ajv = require('ajv');
 const { ValidationError } = require('../../common/errors');
 
-class Validation {
+class Validator {
     constructor() {
-        this._validator = new Validator();
+        this._ajv = new Ajv();
     }
 
     validate(schema, data, strict = true) {
@@ -13,11 +13,11 @@ class Validation {
             delete nSchema.required;
         }
 
-        const valid = this._validator.validate(nSchema, data);
+        const valid = this._ajv.validate(nSchema, data);
         if (!valid) {
-            throw new ValidationError(null, this._validator.errors);
+            throw new ValidationError(null, this._ajv.errors);
         }
     }
 }
 
-module.exports = new Validation();
+module.exports = new Validator();
