@@ -19,7 +19,13 @@ class Model {
 
     _decorate(document) {
         // eslint-disable-next-line no-param-reassign
-        document.toJSON = () => EJSON.deserialize(this);
+        document.toJSON = function () {
+            const data = { ...this };
+            delete data.toJSON;
+            return EJSON.deserialize(data);
+        };
+
+        return document;
     }
 
     preSave(data) {

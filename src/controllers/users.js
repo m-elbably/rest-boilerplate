@@ -29,7 +29,7 @@ class Users extends BaseController {
 
     async create(ctx) {
         // await this.authorize(ctx, ['createAny']);
-        // await this.validate(userSchema, ctx.request.body);
+        await this.validate(userSchema, ctx.request.body);
 
         ctx.body = await this.service.create(ctx.request.body, ctx.request.files);
     }

@@ -13,7 +13,7 @@ class BaseService {
     _parseDocuments(documents) {
         // TODO - To be removed and use base model toJSON()
         return _.isArray(documents) ? documents.map((doc) => EJSON.deserialize(doc))
-            : EJSON.deserialize(documents,);
+            : EJSON.deserialize(documents, { relaxed: true });
     }
 
     // TODO - To be removed and use base model
@@ -161,7 +161,7 @@ class BaseService {
     async create(document) {
         return this._validateUniqueness(document)
             .then(() => this._model.create(document))
-            .then((result) => this._parseDocuments(result));
+            .then((result) => result.toJSON());
     }
 
     async updateById(id, update, opts = {}) {
