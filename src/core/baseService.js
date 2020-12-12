@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const { EJSON } = require('bson');
 const { ObjectId } = require('mongodb');
 const { NotFoundError, ValidationError } = require('../common/errors');
 const { common: { pageSize } } = require('../config');
@@ -8,67 +7,6 @@ class BaseService {
     constructor(model) {
         this.ObjectId = ObjectId;
         this._model = model;
-    }
-
-    _parseDocuments(documents) {
-        // TODO - To be removed and use base model toJSON()
-        return _.isArray(documents) ? documents.map((doc) => EJSON.deserialize(doc))
-            : EJSON.deserialize(documents, { relaxed: true });
-    }
-
-    // TODO - To be removed and use base model
-    /**
-     * Populate single document
-     * @param document
-     * @param options
-     * [{
-     *     field: path,
-     *     collection: String
-     * }]
-     * @returns document
-     * @private
-     */
-    async _populateDocument(document, options) {
-        if (_.isNil(options)) {
-            return document;
-        }
-
-        for (let i = 0; i < options.length; i += 1) {
-            const rId = _.get(document, options[i].field);
-            if (!_.isNil(rId)) {
-                const rModel = this._model.database.collection(options[i].collection);
-                // eslint-disable-next-line no-await-in-loop
-                const rDocument = await rModel.findOne({ _id: new ObjectId(rId) });
-                if (!_.isNil(rDocument)) {
-                    _.set(document, options[i].field, rDocument);
-                }
-            }
-        }
-        return document;
-    }
-
-    /**
-     * Populate array of documents
-     * @param documents
-     * @param opts
-     * [{
-     *     field: path,
-     *     collection: String
-     * }]
-     * @returns documents
-     * @private
-     */
-    async _populate(documents, opts) {
-        if (_.isNil(opts)) {
-            return documents;
-        }
-
-        if (!_.isArray(documents)) {
-            return this._populateDocument(documents, opts);
-        }
-
-        const promises = documents.map((document) => this._populateDocument(document, opts));
-        return Promise.all(promises);
     }
 
     /**
@@ -139,28 +77,8 @@ class BaseService {
         return { params, options };
     }
 
-    async _validateUniqueness(document, id) {
-        const { unique } = this._model._options || {};
-        if (unique) {
-            const options = {};
-            if (unique.ignoreCase) {
-                options.collation = { locale: 'en', strength: 2 };
-            }
-
-            const query = { [unique.field]: document[unique.field] };
-            if (id) {
-                query._id = { $ne: this.ObjectId(id) };
-            }
-            const exists = await this._model.exists(query, options);
-            if (exists) {
-                throw new ValidationError(`Document with the same ${unique.field} already exists`);
-            }
-        }
-    }
-
     async create(document) {
-        return this._validateUniqueness(document)
-            .then(() => this._model.create(document))
+        return this._model.create(document)
             .then((result) => result.toJSON());
     }
 
@@ -172,14 +90,13 @@ class BaseService {
             returnOriginal: false
         });
 
-        await this._validateUniqueness(update, id);
         return this._model.updateById(id, nQuery, nOptions)
             .then((result) => {
                 if (_.isNil(result)) {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return result.toJSON();
             });
     }
 
@@ -190,15 +107,14 @@ class BaseService {
         const nOptions = _.merge(opts, {
             returnOriginal: false
         });
-        // FIXME: id is not defined,
-        // await this._validateUniqueness(update, id);
+
         return this._model.updateOne(filter, nQuery, nOptions)
             .then((result) => {
                 if (_.isNil(result)) {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return result.toJSON();
             });
     }
 
@@ -210,7 +126,7 @@ class BaseService {
                 return result;
             }).then((result) => {
                 if (params.populate) {
-                    return this._populate(result, params.populate);
+                    result.populate(params.populate);
                 }
                 return result.toJSON();
             });
@@ -224,9 +140,9 @@ class BaseService {
                 return result;
             }).then((result) => {
                 if (params.populate) {
-                    return this._populate(result, params.populate);
+                    result.populate(params.populate);
                 }
-                return this._parseDocuments(result);
+                return result.toJSON();
             });
     }
 
@@ -261,16 +177,15 @@ class BaseService {
         return query.toArray()
             .then((docs) => {
                 if (params.populate) {
-                    return this._populate(docs, populate);
+                    const promises = docs.map((doc) => doc.populate(populate));
+                    return Promise.all(promises);
                 }
+
                 return docs;
-            }).then((docs) => this._parseDocuments(docs)).then((docs) => {
-                // if (paginate) {
+            }).then((docs) => docs.map((doc) => doc.toJSON()))
+            .then((docs) => {
                 result[collectionName] = docs;
                 return result;
-                // }
-
-                // return docs;
             });
     }
 
@@ -281,7 +196,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return result.toJSON();
             });
     }
 
@@ -292,7 +207,7 @@ class BaseService {
                     throw new NotFoundError();
                 }
 
-                return this._parseDocuments(result);
+                return result.toJSON();
             });
     }
 

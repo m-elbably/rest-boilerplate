@@ -24,7 +24,11 @@ class User extends Model {
                     fields: { location: '2dsphere' },
                     options: { sparse: true }
                 },
-            ]
+            ],
+            unique: {
+                fields: ['email'],
+                ignoreCase: true
+            }
         });
     }
 }
