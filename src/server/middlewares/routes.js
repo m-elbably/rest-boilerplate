@@ -1,17 +1,9 @@
-const _ = require('lodash');
 const Router = require('koa-router');
 
 const Multipart = require('./request/multipart');
 const { ValidationError } = require('../../common/errors');
 
-// Controllers
-const index = require('../../controllers/index');
-const products = require('../../controllers/users');
-
-const controllers = [
-    index,
-    products
-];
+const controllers = require('../../controllers');
 
 function getActionsFromController(controller) {
     const actions = {};
